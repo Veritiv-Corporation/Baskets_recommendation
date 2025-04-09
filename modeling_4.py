@@ -128,7 +128,7 @@ def copy_rows_with_0_to_2_recommendation(df):
         return count
     
     # Filter rows where count of non-None recommendations is 0 or 1
-    filtered_df = df[df.apply(count_non_none, axis=1) <= 2]
+    filtered_df = df[df.apply(count_non_none, axis=1) <= 8]
     
     return filtered_df
 
@@ -194,13 +194,14 @@ def minimum_three_recommendations(reorder_df, cat3_df, top_5_items_cat3, cat1_df
     item_to_category_dict_cat1 = dict(zip(cat1_df['item_cde'], cat1_df['Category']))
 
     # Define the recommendation columns
-    recommendation_cols = ['Recommendation 1', 'Recommendation 2', 'Recommendation 3', 'Recommendation 4', 'Recommendation 5']
+    recommendation_cols = ['Recommendation 1', 'Recommendation 2', 'Recommendation 3', 'Recommendation 4', 'Recommendation 5',
+    'Recommendation 6', 'Recommendation 7', 'Recommendation 8', 'Recommendation 9', 'Recommendation 10']
 
     # Function to find rows with fewer than 3 recommendations
     def copy_rows_with_fewer_than_3_recommendations(df):
         def count_non_none(row):
             return sum(pd.notna(row[col]) for col in recommendation_cols)
-        return df[df.apply(count_non_none, axis=1) < 3]
+        return df[df.apply(count_non_none, axis=1) < 8]
 
     # Filter rows that need more recommendations
     rows_with_fewer_than_3_recommendations = copy_rows_with_fewer_than_3_recommendations(reorder_df)
@@ -217,8 +218,11 @@ def minimum_three_recommendations(reorder_df, cat3_df, top_5_items_cat3, cat1_df
             top_items_cat1 = top_5_items_cat1[top_5_items_cat1['cat1'] == category_cat1]['item_cde'].values if category_cat1 else []
             
             # Flatten the lists if they are not already
-            top_items_cat3 = [item for sublist in top_items_cat3 for item in sublist] if isinstance(top_items_cat3[0], list) else top_items_cat3
-            top_items_cat1 = [item for sublist in top_items_cat1 for item in sublist] if isinstance(top_items_cat1[0], list) else top_items_cat1
+            if top_items_cat3 and isinstance(top_items_cat3[0], list):
+                top_items_cat3 = [item for sublist in top_items_cat3 for item in sublist]
+
+            if top_items_cat1 and isinstance(top_items_cat1[0], list):
+                top_items_cat1 = [item for sublist in top_items_cat1 for item in sublist]
 
             # Concatenate the top items lists
             combined_top_items = list(top_items_cat3) + list(top_items_cat1)
@@ -239,13 +243,13 @@ def minimum_three_recommendations(reorder_df, cat3_df, top_5_items_cat3, cat1_df
             
             # Add additional items to fill up to 3 recommendations
             for item in unique_top_items:
-                if len(filled_recommendations) >= 3:
+                if len(filled_recommendations) >= 8:
                     break
                 if item not in filled_recommendations:
                     filled_recommendations.append(item)
             
             # Update the recommendations in the DataFrame
-            for i, recommendation in enumerate(filled_recommendations[:3]):
+            for i, recommendation in enumerate(filled_recommendations[:8]):
                 reorder_df.at[idx, recommendation_cols[i]] = recommendation
 
     return reorder_df
@@ -262,3 +266,13 @@ def remove_empty_related_items(df):
     # Filter out rows where 'Related Item Number' is null or empty
     filtered_df = df[df['Related Item Number'].notna() & (df['Related Item Number'] != '')]
     return filtered_df
+
+def drop_spaces(df):
+    result_df = pd.DataFrame({
+    'item_cde': df.item_cde,
+    'reco': df.drop(columns=['item_cde'])  # Apply to all other columns
+        .apply(lambda row: [
+            int(x) if isinstance(x, (str, float, int)) and str(x).strip() != '' else x 
+            for x in row.dropna()
+        ], axis=1)})
+    return result_df

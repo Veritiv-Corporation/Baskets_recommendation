@@ -1,7 +1,7 @@
 import pandas as pd
 def replace_low_values(df,threshold=100):
     # Create the list of frequency columns
-    frequency_columns = [f'frequency {i}' for i in range(1, 6)]
+    frequency_columns = [f'frequency {i}' for i in range(1, 16)]
     
     # Replace values < threshold with 'replace_with'
     df[frequency_columns] = df[frequency_columns].applymap(lambda x: 'CAT' if x < threshold else x)

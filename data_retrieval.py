@@ -78,7 +78,7 @@ def fetch_trx_data(conn, df):
                     WHERE 1=1
                     AND sit.trans_type_desc in ('ORDER', 'INVOICE')
                     AND f.incl_fin_rpt_sw = 'Y' /*FILTER OUT INTERNAL TRANSFERS AND NON-CUSTOMER SALES*/
-                    AND f.invc_date >= '2023-10-01' and f.invc_date <= '2024-10-01' 
+                    AND f.invc_date >= '2024-03-01' and f.invc_date <= '2025-03-21' 
                         --BETWEEN CURRENT_DATE - INTERVAL '1 year' AND CURRENT_DATE
                     AND f.sys_cde in ('03','MA','NU','PC')
                     AND ISNULL(i.item_class_cde,'') <> '99'
@@ -303,6 +303,54 @@ def fetch_private_label_data(conn, df):
     finally:
         conn.close()
 
+
+def fetch_segment_data(conn, df):
+    """
+    Fetches segment data from the database based on item codes in the provided DataFrame.
+    Parameters:
+        conn: The database connection object.
+        df: A DataFrame containing 'item_cde' column.
+    Returns:
+        segment_df: A DataFrame containing segment data for item codes provided.
+        It contains: 'item_cde', 'segment'
+    """
+    if conn is None:
+        print("Database connection is not established.")
+        return None
+
+    try:
+        with conn.cursor() as cursor:
+            # Generate placeholders for SQL query
+            placeholders = ', '.join(['%s'] * len(df['item_cde']))
+
+            # SQL query to fetch segment data
+            query = f"""
+                    SELECT item_cde,
+                           prod_seg_name
+                    FROM veritiv.edm.d_item_mst
+                    WHERE item_cde IN ({placeholders});
+                    """
+
+            # Execute query
+            cursor.execute(query, tuple(df['item_cde']))
+            result = cursor.fetchall()
+
+            # Convert result to DataFrame
+            segment_df = pd.DataFrame(result, columns=['item_cde', 'segment'])
+
+        conn.commit()
+
+        return segment_df
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        conn.rollback()
+        return None
+
+    finally:
+        conn.close()
+
+
 def fetch_brand_data(conn, df):
     """
     Fetches category data from the database based on item codes in the provided DataFrame.
@@ -364,3 +412,101 @@ def fetch_brand_data(conn, df):
 
     finally:
         conn.close()
+
+def fetch_sustainability_data(conn, df):
+    """
+    Fetches sustainability data from the database based on item codes in the provided DataFrame.
+    Parameters:
+        conn: The database connection object.
+        df: A DataFrame containing 'item_cde' column.
+    Returns:
+        sustainability_df: A DataFrame containing sustainability data for item codes provided.
+        It contains: 'item_cde', 'sustainable'
+    """
+    if conn is None:
+        print("Database connection is not established.")
+        return None
+    
+    try:
+        with conn.cursor() as cursor:
+            # Generate the placeholders string based on the number of items
+            placeholders = ', '.join(['%s'] * len(df['item_cde']))
+            
+            # SQL query to fetch sustainability data based on item_cde in the DataFrame
+            query = f"""
+                    SELECT item_cde,
+                           sustainable
+                    FROM veritiv.edm.d_item_mst
+                    WHERE item_cde IN ({placeholders})
+                    AND sustainable LIKE '%true%';
+                    """
+
+            # Execute the query
+            cursor.execute(query, tuple(df['item_cde']))
+            result = cursor.fetchall()
+
+            # Convert query result to DataFrame
+            sustainability_df = pd.DataFrame(result, columns=['item_cde', 'sustainable'])
+
+        conn.commit()
+
+        return sustainability_df
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        conn.rollback()
+        return None
+
+    finally:
+        conn.close()
+
+import pandas as pd
+
+def fetch_mfg_name_data(conn, df):
+    """
+    Fetches manufacturer name (mfg_name) from the database based on item codes in the provided DataFrame.
+    
+    Parameters:
+        conn: The database connection object.
+        df: A DataFrame containing 'item_cde' column.
+    
+    Returns:
+        mfg_name_df: A DataFrame containing manufacturer names for item codes provided.
+        It contains: 'item_cde', 'mfg_name'
+    """
+    if conn is None:
+        print("Database connection is not established.")
+        return None
+
+    try:
+        with conn.cursor() as cursor:
+            # Generate placeholders for SQL query
+            placeholders = ', '.join(['%s'] * len(df['item_cde']))
+
+            # SQL query to fetch manufacturer name (mfg_name)
+            query = f"""
+                    SELECT item_cde,
+                           mfg_name
+                    FROM veritiv.edm.d_item_mst
+                    WHERE item_cde IN ({placeholders});
+                    """
+
+            # Execute query
+            cursor.execute(query, tuple(df['item_cde']))
+            result = cursor.fetchall()
+
+            # Convert result to DataFrame
+            mfg_name_df = pd.DataFrame(result, columns=['item_cde', 'mfg_name'])
+
+        conn.commit()
+
+        return mfg_name_df
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        conn.rollback()
+        return None
+
+    finally:
+        conn.close()
+
